@@ -66,4 +66,15 @@ Durante el proceso de desarrollo e integración final, se identificaron y solven
 
 ### 1. El Conflicto de la Declaración Implícita por Enlaces Cruzados
 * **Problema:** Al intentar separar de forma modular la lógica de las alarmas horarias y la del termostato, los prototipos de funciones se cruzaron. Archivos principales como `main.c` no lograban localizar los archivos de cabecera correctos para obtener las firmas de las funciones de temperatura, arrojando errores masivos de compilación por declaraciones implícitas (`implicit declaration of function`).
-* **Solución:** Se aislaron por completo las responsabilidades. Se definió una interfaz limpia en
+* **Solución:** Se aislaron por completo las responsabilidades. Se definió una interfaz limpia en `settings.h` exclusiva para temperaturas y otra en `schedule.h` para el calendario, incluyendo explícitamente las firmas de función bajo directivas de guardas C/C++ (`#ifndef` / `extern "C"`) para evitar colisiones en tiempo de compilación.
+
+### 2. Inversión de Lógica y Error de Referencia en el Enlazador (Linker Error)
+* **Problema:** Debido a una duplicación involuntaria durante la refactorización de nombres, el archivo de horarios (`schedule.c`) terminó albergando el código duplicado del termostato y carecía por completo de la lógica de calendario real. Esto provocó que el compilador finalizara con éxito los objetos individuales pero el enlazador fallara críticamente con el error: `undefined reference to registers_init`. El programa no lograba fusionar el ejecutable final porque la función de inicialización buscada por `main.c` se había omitido del mapa de compilación.
+* **Solución:** Se reconstruyó por completo el archivo `schedule.c`, insertando la lógica legítima del control de tiempos (lectura y escritura de arreglos de horarios en memoria persistente, mapeo de banderas booleanas para los 7 días de la semana y empaquetado seguro de strings JSON para el servidor web), dejando a `settings.c` exclusivamente como el controlador térmico.
+
+### 3. Rigidez de Tipos NVS y Alineación de Memoria en la API ESP-IDF v6.0
+* **Problema:** En versiones antiguas del framework era habitual interactuar con variables numéricas directas de la NVS. En la arquitectura v6.0, esto genera advertencias estrictas y desalineaciones de memoria si el tamaño en bytes no se declara de manera explícita en los nuevos compiladores RISC-V de 32 bits de Espressif.
+* **Solución:** Se rediseñaron los accesos NVS tanto en `settings.c` como en `schedule.c` migrando hacia la lectura y escritura segura basada en vectores de bytes (`nvs_get_blob`). Ahora el firmware solicita explícitamente el tamaño exacto en memoria (`sizeof(float)` o `sizeof(global_registers)`) antes de extraer la información de la Flash, blindando por completo al sistema contra corrupciones incidentales de memoria (`Memory Corruption`).
+
+---
+El proyecto compila al 100% sin errores de declaración implícita, referencias huérfanas ni solapamiento de memoria Flash (ajustada correctamente a **4MB** en el archivo `sdkconfig`).
