@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <script src="jquery-3.3.1.min.js"></script>
+    <link rel="stylesheet" href="app.css">
+    <script async src="app.js"></script>
+    <title>ESP32 Control Panel</title>
+</head>
+<body>
+    <div class="page">
+        <header class="hero">
+            <div class="hero__text">
+                <p class="eyebrow">ESP32</p>
+                <h1>Control Center</h1>
+                <p class="subtitle">Gestiona tu dispositivo, credenciales y horarios en un panel limpio inspirado en iOS.</p>
+            </div>
+            <div class="hero__badge">
+                <div class="badge__label" id="latest_firmware_label">Latest Firmware</div>
+                <div class="badge__value" id="latest_firmware">--</div>
+            </div>
+        </header>
+
+        <main class="grid">
+            <section class="card" id="OTA">
+                <div class="card__header">
+                    <p class="eyebrow">OTA</p>
+                    <h2>ESP32 Firmware Update</h2>
+                </div>
+                <div class="card__content stack">
+                    <input type="file" id="selected_file" accept=".bin" onchange="getFileInfo()" hidden />
+                    <div class="actions">
+                        <button class="btn ghost" type="button" onclick="document.getElementById('selected_file').click();">Select File</button>
+                        <button class="btn primary" type="button" onclick="updateFirmware()">Update Firmware</button>
+                    </div>
+                    <div class="status" id="file_info"></div>
+                    <div class="status highlight" id="ota_update_status"></div>
+                </div>
+            </section>
+
+            <section class="card" id="WiFiConnect">
+                <div class="card__header">
+                    <p class="eyebrow">Conectividad</p>
+                    <h2>ESP32 WiFi Connect</h2>
+                </div>
+                <div class="card__content stack">
+                    <label class="field">
+                        <span>SSID</span>
+                        <input id="connect_ssid" type="text" maxlength="32" placeholder="Red WiFi">
+                    </label>
+                    <label class="field">
+                        <span>Password</span>
+                        <input id="connect_pass" type="password" maxlength="64" placeholder="Ingresa la clave">
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" onclick="showPassword()">
+                        <span>Mostrar password</span>
+                    </label>
+                    <div class="actions">
+                        <button class="btn primary" id="connect_wifi" type="button">Connect</button>
+                        <button class="btn secondary" type="button" onclick="toogle_led()">Toggle LED</button>
+                    </div>
+                    <div class="status error" id="wifi_connect_credentials_errors"></div>
+                    <div class="status" id="wifi_connect_status"></div>
+                </div>
+            </section>
+
+            <section class="card" id="DHT22Sensor">
+                <div class="card__header">
+                    <p class="eyebrow">Sensores</p>
+                    <h2>Temperature Reading</h2>
+                </div>
+                <div class="card__content">
+                    <div class="metric">
+                        <span class="metric__label">Temperature</span>
+                        <span class="metric__value" id="temperature_reading">--</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card" id="Configreading">
+                <div class="card__header">
+                    <p class="eyebrow">Registros</p>
+                    <h2>Tiempos configurados</h2>
+                </div>
+                <div class="card__content reg-list">
+                    <div class="reg-row"><span>Registro 1</span><span id="reg_1" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 2</span><span id="reg_2" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 3</span><span id="reg_3" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 4</span><span id="reg_4" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 5</span><span id="reg_5" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 6</span><span id="reg_6" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 7</span><span id="reg_7" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 8</span><span id="reg_8" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 9</span><span id="reg_9" class="reg-value">--</span></div>
+                    <div class="reg-row"><span>Registro 10</span><span id="reg_10" class="reg-value">--</span></div>
+                </div>
+            </section>
+
+            <section class="card" id="Insert_mem">
+                <div class="card__header">
+                    <p class="eyebrow">Programacion</p>
+                    <h2>Configurar registro</h2>
+                </div>
+                <div class="card__content stack">
+                    <label class="field">
+                        <span>Selecciona el registro</span>
+                        <select id="selectNumber" name="selectNumber">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </label>
+                    <div class="double">
+                        <label class="field">
+                            <span>Hora</span>
+                            <input type="number" id="hours" name="hours" min="0" max="23" value="12">
+                        </label>
+                        <label class="field">
+                            <span>Minutos</span>
+                            <input type="number" id="minutes" name="minutes" min="0" max="59" value="30">
+                        </label>
+                    </div>
+
+                    <div class="days">
+                        <span class="days__title">Dias de la semana</span>
+                        <label class="checkbox"><input type="checkbox" id="day_mon" name="day_mon" value="Monday" checked><span>Lunes</span></label>
+                        <label class="checkbox"><input type="checkbox" id="day_tue" name="day_tue" value="Tuesday"><span>Martes</span></label>
+                        <label class="checkbox"><input type="checkbox" id="day_wed" name="day_wed" value="Wednesday"><span>Miercoles</span></label>
+                        <label class="checkbox"><input type="checkbox" id="day_thu" name="day_thu" value="Thursday"><span>Jueves</span></label>
+                        <label class="checkbox"><input type="checkbox" id="day_fri" name="day_fri" value="Friday"><span>Viernes</span></label>
+                        <label class="checkbox"><input type="checkbox" id="day_sat" name="day_sat" value="Saturday"><span>Sabado</span></label>
+                        <label class="checkbox"><input type="checkbox" id="day_sun" name="day_sun" value="Sunday"><span>Domingo</span></label>
+                    </div>
+                    <div class="actions">
+                        <button class="btn primary" type="button" onclick="send_register()">Enviar registro</button>
+                        <button class="btn secondary" type="button" onclick="getregValues()">Leer registro</button>
+                        <button class="btn ghost" type="button" onclick="erase_register()">Borrar registro</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
+
