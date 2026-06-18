@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="stylesheet" href="app.css" />
+  <title>STR 2026 Dashboard</title>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">ESP32-C6 · STR 2026</p>
+        <h1>Control Ambiental Automatizado</h1>
+        <p class="subtitle">Telemetría térmica, ventilación proporcional, RGB, cortinas, agenda, Wi-Fi y OTA desde una interfaz local.</p>
+      </div>
+      <div class="status-pill" id="connection_state">Conectando…</div>
+    </header>
+
+    <main class="grid">
+      <section class="card large">
+        <div class="card__header">
+          <p class="eyebrow">Telemetría</p>
+          <h2><span id="temperature_reading">--</span> °C</h2>
+        </div>
+        <canvas id="temp_chart" height="130"></canvas>
+        <div class="metrics">
+          <div><span>ADC raw</span><strong id="adc_raw">--</strong></div>
+          <div><span>ADC mV</span><strong id="adc_mv">--</strong></div>
+          <div><span>Ventilador</span><strong id="fan_percent">--%</strong></div>
+          <div><span>Alarma</span><strong id="alarm_state">--</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__header"><p class="eyebrow">Control térmico</p><h2>Ventilador PWM</h2></div>
+        <label class="field"><span>Modo</span><select id="thermal_mode"><option value="auto">Automático</option><option value="manual">Manual</option></select></label>
+        <label class="field"><span>Temperatura deseada (°C)</span><input id="desired_temp_c" type="number" step="0.1" min="-20" max="100" /></label>
+        <label class="field"><span>Temperatura máxima (°C)</span><input id="max_temp_c" type="number" step="0.1" min="-19" max="120" /></label>
+        <label class="field"><span>Ventilador manual (%)</span><input id="manual_fan_percent" type="range" min="0" max="100" /></label>
+        <button class="btn primary" id="save_thermal">Guardar térmico</button>
+      </section>
+
+      <section class="card">
+        <div class="card__header"><p class="eyebrow">Cortinas</p><h2>Servo 50 Hz</h2></div>
+        <label class="field"><span>Modo</span><select id="curtain_mode"><option value="manual">Manual</option><option value="auto">Automático por agenda</option></select></label>
+        <label class="field"><span>Apertura (%)</span><input id="curtain_percent" type="range" min="0" max="100" /></label>
+        <div class="range-value"><span id="curtain_value">0</span>%</div>
+        <button class="btn primary" id="save_curtain">Guardar cortina</button>
+      </section>
+
+      <section class="card">
+        <div class="card__header"><p class="eyebrow">Iluminación</p><h2>RGB ambiental</h2></div>
+        <div class="rgb-preview" id="rgb_preview"></div>
+        <label class="field"><span>Rojo</span><input id="rgb_r" type="range" min="0" max="255" /></label>
+        <label class="field"><span>Verde</span><input id="rgb_g" type="range" min="0" max="255" /></label>
+        <label class="field"><span>Azul</span><input id="rgb_b" type="range" min="0" max="255" /></label>
+        <label class="field"><span>Brillo (%)</span><input id="rgb_brightness" type="range" min="0" max="100" /></label>
+        <button class="btn primary" id="save_rgb">Guardar RGB</button>
+      </section>
+
+      <section class="card large">
+        <div class="card__header"><p class="eyebrow">Agenda</p><h2>10 registros de cortinas</h2></div>
+        <div class="schedule-form">
+          <label class="field"><span>Registro</span><select id="selectNumber"></select></label>
+          <label class="field"><span>Hora</span><input id="hours" type="number" min="0" max="23" value="7" /></label>
+          <label class="field"><span>Minuto</span><input id="minutes" type="number" min="0" max="59" value="0" /></label>
+          <label class="field"><span>Apertura (%)</span><input id="schedule_curtain_percent" type="number" min="0" max="100" value="100" /></label>
+        </div>
+        <div class="days">
+          <label><input id="day_mon" type="checkbox" checked /> Lu</label>
+          <label><input id="day_tue" type="checkbox" checked /> Ma</label>
+          <label><input id="day_wed" type="checkbox" checked /> Mi</label>
+          <label><input id="day_thu" type="checkbox" checked /> Ju</label>
+          <label><input id="day_fri" type="checkbox" checked /> Vi</label>
+          <label><input id="day_sat" type="checkbox" /> Sa</label>
+          <label><input id="day_sun" type="checkbox" /> Do</label>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="save_register">Guardar registro</button>
+          <button class="btn ghost" id="erase_register">Borrar registro</button>
+        </div>
+        <div class="registers" id="registers_list"></div>
+      </section>
+
+      <section class="card">
+        <div class="card__header"><p class="eyebrow">Wi-Fi STA</p><h2>Conexión externa</h2></div>
+        <label class="field"><span>SSID</span><input id="connect_ssid" maxlength="32" placeholder="Red WiFi" /></label>
+        <label class="field"><span>Password</span><input id="connect_pass" type="password" maxlength="64" placeholder="Clave" /></label>
+        <label class="checkbox"><input type="checkbox" id="show_password" /> Mostrar password</label>
+        <button class="btn primary" id="connect_wifi">Conectar</button>
+        <div class="status" id="wifi_connect_status"></div>
+      </section>
+
+
+      <section class="card">
+        <div class="card__header"><p class="eyebrow">Soft-AP</p><h2>Red local del ESP32</h2></div>
+        <label class="field"><span>SSID del AP</span><input id="ap_ssid" maxlength="32" placeholder="ESP32_STR_2026" /></label>
+        <label class="field"><span>Password del AP</span><input id="ap_password" type="password" maxlength="64" placeholder="Mínimo 8 caracteres o vacío" /></label>
+        <button class="btn primary" id="save_ap_config">Guardar AP</button>
+        <div class="status" id="ap_config_status">Se aplica al AP actual y queda persistido en NVS.</div>
+      </section>
+
+      <section class="card">
+        <div class="card__header"><p class="eyebrow">OTA</p><h2>Actualizar firmware</h2></div>
+        <input type="file" id="selected_file" accept=".bin" hidden />
+        <div class="actions">
+          <button class="btn ghost" id="select_file">Seleccionar .bin</button>
+          <button class="btn primary" id="update_firmware">Subir OTA</button>
+        </div>
+        <div class="status" id="file_info">Sin archivo</div>
+        <div class="status highlight" id="ota_update_status"></div>
+        <div class="status">Firmware: <span id="latest_firmware">--</span></div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

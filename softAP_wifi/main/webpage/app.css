@@ -1,0 +1,190 @@
+body {
+    background-color: #e58989;
+    font-family: HelveticaNeueRegular, HelveticaNeue-Regular, "Helvetica Neue Regular", HelveticaNeue, "Helvetica Neue", Helvetica, Arial;
+    color: #0272B7;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    display: block;
+    text-align: center;
+    margin: 0;
+    padding: 15px;
+    font-size: 1.7em;
+    color: #1d3557;
+}
+
+h2 {
+    font-size: 1.4em;
+    color: #1d3557;
+    margin-top: 0;
+}
+
+h3 {
+    font-size: 1.2em;
+    color: #1d3557;
+}
+
+h4 {
+    font-size: 1em;
+    color: #1d3557;
+}
+
+.gr { color: green; }
+.rd { color: red; }
+
+/* Layout principal del Dashboard */
+.dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px 20px 20px;
+}
+
+.panel {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Posicionamiento específico */
+#WiFiConnect {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+#DHT22Sensor {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.rgb-panel {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
+/* Formularios */
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: inline-block;
+    width: 80px;
+    font-weight: bold;
+    color: #1d3557;
+}
+
+input[type="text"], input[type="password"] {
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid #1d3557;
+    width: calc(100% - 100px);
+    max-width: 220px;
+}
+
+/* Sensores */
+.sensor-row {
+    margin: 8px 0;
+    font-size: 1.1em;
+}
+#temperature_reading, #humidity_reading {
+    display: inline;
+    font-weight: bold;
+    color: #1d3557;
+}
+
+/* Canvas de la gráfica */
+canvas {
+    background: rgba(255,255,255,0.4);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    display: block;
+    margin-top: 10px;
+}
+
+/* RGB Section */
+.rgb-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.rgb-channel {
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+}
+
+.rgb-channel label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #1d3557;
+}
+
+input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+.rgb-channel span {
+    display: inline-block;
+    margin-top: 5px;
+    font-weight: bold;
+    background: rgba(255,255,255,0.4);
+    padding: 2px 8px;
+    border-radius: 6px;
+    min-width: 30px;
+}
+
+/* Botones */
+.buttons {
+    padding: 5px;
+    text-align: center;
+}
+
+input[type="button"] {
+    font-size: 13px;
+    border: 0;
+    line-height: 2.2;
+    padding: 0 15px;
+    text-align: center;
+    color: #ffffff;
+    text-shadow: 1px 1px 1px #000;
+    border-radius: 10px;
+    background-color: RGBA(106,125,144,0.35);
+    background-image: linear-gradient(to top left,
+                                      rgba(0, 0, 0, .2),
+                                      rgba(0, 0, 0, .2) 30%,
+                                      rgba(0, 0, 0, 0));
+    box-shadow: inset 2px 2px 3px rgba(255, 255, 255, .6),
+                inset -2px -2px 3px rgba(0, 0, 0, .6);
+    cursor: pointer;
+    margin: 3px;
+}
+
+input[type="button"]:hover {
+    background-color: RGBA(112,164,222,0.68);
+}
+
+input[type="button"]:active {
+    box-shadow: inset -2px -2px 3px rgba(255, 255, 255, .6),
+                inset 2px 2px 3px rgba(0, 0, 0, .6);
+}
+
+/* OTA */
+#latest_firmware, #latest_firmware_label {
+    display: inline;
+}
+#latest_firmware {
+    color: #1d3557;
+}

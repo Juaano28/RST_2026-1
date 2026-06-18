@@ -1,0 +1,24 @@
+idf_component_register(
+    SRCS 
+        "main.c" 
+        "wifi_app.c" 
+        "http_server.c" 
+        "rgb_led.c"
+    INCLUDE_DIRS 
+        "."
+    EMBED_FILES 
+        "webpage/index.html"
+        "webpage/app.css"
+        "webpage/app.js"
+        "webpage/jquery-3.3.1.min.js"
+        "webpage/favicon.ico"
+    REQUIRES
+        nvs_flash
+        esp_http_server
+        driver
+        esp_wifi
+        esp_event
+        esp_netif
+        esp_timer
+        app_update
+)

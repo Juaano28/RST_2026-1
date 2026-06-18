@@ -10,14 +10,22 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "lwip/netdb.h"
+#include "lwip/inet.h"
 #include "nvs.h"
 
 #include "http_server.h"
-#include "library_led_c.h"
+#include "rgb_led.h"
 #include "tasks_common.h"
 #include "wifi_app.h"
 #include "esp_sntp.h"
@@ -44,56 +52,32 @@ esp_netif_t* esp_netif_ap  = NULL;
 
 bool time_was_synchronized;
 
-extern uint8_t s_led_state;
 
-// Función para inicializar SNTP y obtener hora de internet
-void init_obtain_time(void) {
-    ESP_LOGI("SNTP", "Inicializando cliente SNTP...");
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");
-    sntp_init();
 
-    // Esperar a que la hora se sincronice
-    int retry = 0;
-    const int retry_count = 10;
-    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
-        ESP_LOGI("SNTP", "Esperando sincronización de hora (%d/%d)...", retry, retry_count);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-    }
-    
-    if (sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED) {
-        ESP_LOGI("SNTP", "Hora sincronizada correctamente.");
-		setenv("TZ", "COT5", 1); 
-    	tzset();
-    	ESP_LOGI("SNTP", "Zona horaria configurada: COT-5");
 
-    } else {
-        ESP_LOGE("SNTP", "Error: No se pudo sincronizar la hora.");
-    }
+
+
+
+
+
+void init_obtain_time( void ){
+	time_was_synchronized = false;
 }
 
-bool get_state_time_was_synchronized(void) {
-    if (!time_was_synchronized) return false;
-    
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    
-    // Si el año es mayor a 2020, SNTP ya descargó la hora real de internet con éxito
-    return (timeinfo.tm_year >= (2020 - 1900));
+bool get_state_time_was_synchronized( void ){
+	return time_was_synchronized;
 }
 
 
-void obtain_time(void)
+static void obtain_time(void)
 {	
 	setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
     tzset();
     ESP_LOGI(TAG, "Initializing SNTP");
     // Configurar el servidor SNTP. Aquí se utiliza "pool.ntp.org" como ejemplo. Puedes cambiarlo según tus necesidades.
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "0.co.pool.ntp.org");
-    sntp_init();
+    esp_sntp_setoperatingmode(...)
+	esp_sntp_setservername(...)
+	esp_sntp_init()
 
     // Esperar a que se sincronice el tiempo con el servidor SNTP
     time_t now = 0;
@@ -469,7 +453,7 @@ void connect_to_wifi(void) {
 		memset(wifi_config, 0x00, sizeof(wifi_config_t));
    		strncpy((char*)wifi_config->sta.ssid, ssid, sizeof(wifi_config->sta.ssid));
     	strncpy((char*)wifi_config->sta.password, password, sizeof(wifi_config->sta.password));
-   		esp_wifi_set_config(WIFI_IF_STA, wifi_config);
+		esp_wifi_set_config(WIFI_IF_AP, &ap_config);
    		wifi_app_connect_sta();
 
 	       // Do some work
@@ -627,43 +611,49 @@ static void wifi_app_default_wifi_init(void)
  */
 static void wifi_app_soft_ap_config(void)
 {
-	// SoftAP - WiFi access point configuration
-	wifi_config_t ap_config =
-	{
-		.ap = {
-				.ssid = WIFI_AP_SSID,
-				.ssid_len = strlen(WIFI_AP_SSID),
-				.password = WIFI_AP_PASSWORD,
-				.channel = WIFI_AP_CHANNEL,
-				.ssid_hidden = WIFI_AP_SSID_HIDDEN,
-				.authmode = WIFI_AUTH_WPA2_PSK,
-				.max_connection = WIFI_AP_MAX_CONNECTIONS,
-				.beacon_interval = WIFI_AP_BEACON_INTERVAL,
-		},
-	};
+	char ap_ssid[MAX_SSID_LENGTH + 1] = WIFI_AP_SSID;
+	char ap_password[MAX_PASSWORD_LENGTH + 1] = WIFI_AP_PASSWORD;
+	nvs_handle_t nvs_handle;
+	if (nvs_open("storage", NVS_READONLY, &nvs_handle) == ESP_OK) {
+		size_t ssid_len = sizeof(ap_ssid);
+		size_t pass_len = sizeof(ap_password);
+		nvs_get_str(nvs_handle, "ap_ssid", ap_ssid, &ssid_len);
+		nvs_get_str(nvs_handle, "ap_password", ap_password, &pass_len);
+		nvs_close(nvs_handle);
+	}
+
+	// SoftAP - WiFi access point configuration. Las credenciales pueden persistirse por /api/ap_config.
+	wifi_config_t ap_config = {0};
+	strncpy((char *)ap_config.ap.ssid, ap_ssid, sizeof(ap_config.ap.ssid));
+	ap_config.ap.ssid_len = strlen(ap_ssid);
+	strncpy((char *)ap_config.ap.password, ap_password, sizeof(ap_config.ap.password));
+	ap_config.ap.channel = WIFI_AP_CHANNEL;
+	ap_config.ap.ssid_hidden = WIFI_AP_SSID_HIDDEN;
+	ap_config.ap.authmode = strlen(ap_password) == 0 ? WIFI_AUTH_OPEN : WIFI_AUTH_WPA2_PSK;
+	ap_config.ap.max_connection = WIFI_AP_MAX_CONNECTIONS;
+	ap_config.ap.beacon_interval = WIFI_AP_BEACON_INTERVAL;
 
 	// Configure DHCP for the AP
 	esp_netif_ip_info_t ap_ip_info;
 	memset(&ap_ip_info, 0x00, sizeof(ap_ip_info));
 
-	esp_netif_dhcps_stop(esp_netif_ap);					///> must call this first
-	inet_pton(AF_INET, WIFI_AP_IP, &ap_ip_info.ip);		///> Assign access point's static IP, GW, and netmask
+	esp_netif_dhcps_stop(esp_netif_ap);
+	inet_pton(AF_INET, WIFI_AP_IP, &ap_ip_info.ip);
 	inet_pton(AF_INET, WIFI_AP_GATEWAY, &ap_ip_info.gw);
 	inet_pton(AF_INET, WIFI_AP_NETMASK, &ap_ip_info.netmask);
-	ESP_ERROR_CHECK(esp_netif_set_ip_info(esp_netif_ap, &ap_ip_info));			///> Statically configure the network interface
-	ESP_ERROR_CHECK(esp_netif_dhcps_start(esp_netif_ap));						///> Start the AP DHCP server (for connecting stations e.g. your mobile device)
+	ESP_ERROR_CHECK(esp_netif_set_ip_info(esp_netif_ap, &ap_ip_info));
+	ESP_ERROR_CHECK(esp_netif_dhcps_start(esp_netif_ap));
 
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));						///> Setting the mode as Access Point / Station Mode
-	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));			///> Set our configuration
-	ESP_ERROR_CHECK(esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_AP_BANDWIDTH));		///> Our default bandwidth 20 MHz
-	ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_STA_POWER_SAVE));						///> Power save set to "NONE"
-
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
+	ESP_ERROR_CHECK(esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_AP_BANDWIDTH));
+	ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_STA_POWER_SAVE));
 }
 
 /**
  * Connects the ESP32 to an external AP using the updated station configuration
  */
-void wifi_app_connect_sta(void)
+static void wifi_app_connect_sta(void)
 {
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, wifi_app_get_wifi_config()));
 	ESP_ERROR_CHECK(esp_wifi_connect());
@@ -827,7 +817,8 @@ bool compare_hour_day_structs (struct tm timeinfo, register_saved_e aux_reg ){
 	if( timeinfo.tm_hour == aux_reg.hour ){
 		if( timeinfo.tm_min == aux_reg.min ){
 			// we should activate the motor
-			vTaskDelay(40000 / portTICK_PERIOD_MS);
+			toogle_led();
+			/* Sin bloqueo largo: la agenda real se ejecuta en control_system.c. */
 			return true;
 		}
 		else{
@@ -906,9 +897,7 @@ void wifi_app_start(void)
 	xSemaphoreGive(mySemaphore);
 	// Start the WiFi application task
 	xTaskCreatePinnedToCore(&wifi_app_task, "wifi_app_task", WIFI_APP_TASK_STACK_SIZE, NULL, WIFI_APP_TASK_PRIORITY, NULL, WIFI_APP_TASK_CORE_ID);
-	xTaskCreatePinnedToCore(&task_compare_hour_to_execute_action, "checking_app_task", 4096, NULL, 5, NULL, 1);
-	
-	
+	/* La agenda de cortinas ahora corre en control_system.c sin bloqueos largos. */
 }
 
 

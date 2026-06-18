@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <script src='jquery-3.3.1.min.js'></script>
+    <link rel="stylesheet" href="app.css">
+    <script async src="app.js"></script>
+    <title>ESP32 Dashboard - Tiempo Real</title>
+</head>
+<body>
+    <header>
+        <h1>ESP32 Sistemas en Tiempo Real</h1>
+    </header>
+
+    <div class="dashboard">
+        <!-- Izquierda superior: Configuración de Red -->
+        <div class="panel" id="WiFiConnect">
+            <h2>Establecimiento de Red</h2>
+            <div class="form-group">
+                <label for="wifi_ssid">SSID:</label>
+                <input type="text" id="wifi_ssid" placeholder="Nombre de red" maxlength="32">
+            </div>
+            <div class="form-group">
+                <label for="wifi_password">Password:</label>
+                <input type="password" id="wifi_password" placeholder="Contraseña" maxlength="64">
+            </div>
+            <div class="buttons">
+                <input id="wifi_connect_btn" type="button" value="Conectar a red" />
+            </div>
+            <h4 id="wifi_connect_status">Estado: Esperando configuración...</h4>
+        </div>
+
+        <!-- Derecha superior: Temperatura en tiempo real + Gráfica -->
+        <div class="panel" id="DHT22Sensor">
+            <h2>Temperatura y Humedad</h2>
+            <div class="sensor-row">
+                <label for="temperature_reading">Temperatura: </label>
+                <div id="temperature_reading">--</div> <span>°C</span>
+            </div>
+            <div class="sensor-row">
+                <label for="humidity_reading">Humedad: </label>
+                <div id="humidity_reading">--</div> <span>%</span>
+            </div>
+            <h3>Histórico de Temperatura</h3>
+            <canvas id="temp_chart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Inferior: Configuración RGB (full width) -->
+        <div class="panel rgb-panel" id="RGBControl">
+            <h2>Configuración LED RGB</h2>
+            <div class="rgb-container">
+                <div class="rgb-channel">
+                    <label for="red_val">Rojo</label>
+                    <input id="red_val" type="range" min="0" max="255" value="0">
+                    <span id="red_display">0</span>
+                </div>
+                <div class="rgb-channel">
+                    <label for="green_val">Verde</label>
+                    <input id="green_val" type="range" min="0" max="255" value="0">
+                    <span id="green_display">0</span>
+                </div>
+                <div class="rgb-channel">
+                    <label for="blue_val">Azul</label>
+                    <input id="blue_val" type="range" min="0" max="255" value="0">
+                    <span id="blue_display">0</span>
+                </div>
+            </div>
+            <div class="buttons">
+                <input id="send_rgb" type="button" value="Aplicar color" />
+            </div>
+        </div>
+    </div>
+
+    <hr style="margin:20px; border-color:#1d3557;">
+
+    <!-- Sección OTA original del profesor (mantenida) -->
+    <div id="OTA" style="text-align:center;">
+        <h2>ESP32 Firmware Update</h2>
+        <label id="latest_firmware_label">Latest Firmware: </label>
+        <div id="latest_firmware"></div> 
+        <input type="file" id="selected_file" accept=".bin" style="display: none;" onchange="getFileInfo()" />
+        <div class="buttons">
+            <input type="button" value="Select File" onclick="document.getElementById('selected_file').click();" />
+            <input type="button" value="Update Firmware" onclick="updateFirmware()" />
+        </div>
+        <h4 id="file_info"></h4>	
+        <h4 id="ota_update_status"></h4>
+    </div>
+
+</body>
+</html>

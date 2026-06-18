@@ -1,74 +1,121 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-S2 | ESP32-S3 | ESP32-P4 | ESP32-H2 |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | -------- | -------- | -------- |
+# STR 2026 — Sistema de Control Ambiental Automatizado ESP32-C6
 
-# Wi-Fi SoftAP & Station Example
+Proyecto final de Sistemas de Tiempo Real para controlar temperatura, ventilación, iluminación RGB y cortinas automatizadas desde un ESP32-C6 con dashboard web, Wi-Fi AP+STA, agenda persistente y OTA.
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+## Resumen funcional
 
-This example demonstrates how to use the ESP Wi-Fi driver to act as both an Access Point and a Station simultaneously using the SoftAP and Station features.
-With NAPT enabled on the softAP interface and the station interface set as the default interface this example can be used as Wifi nat router.
+El firmware implementa una arquitectura por capas:
 
-## How to use example
-### Configure the project
+1. **Capa de adquisición:** ADC oneshot + calibración Curve Fitting para NTC 10 kΩ.
+2. **Capa de control local:** tarea FreeRTOS periódica de 1 segundo en `control_system.c`.
+3. **Capa de actuadores:** ventilador PWM, LED RGB, servo 50 Hz y LED rojo de alarma.
+4. **Capa persistente:** NVS para setpoints, modos, RGB, cortina y 10 registros de agenda.
+5. **Capa de red:** Wi-Fi AP+STA y SNTP.
+6. **Capa web:** dashboard embebido con endpoints JSON y OTA.
 
-Open the project configuration menu (`idf.py menuconfig`).
+## GPIOs usados
 
-In the `Example Configuration` menu:
+| Función | GPIO | Periférico | Notas |
+|---|---:|---|---|
+| NTC 10 kΩ | ADC1 CH0 | ADC | Divisor: 3.3 V → R serie 10 kΩ → Vout → NTC → GND |
+| Potenciómetro opcional | ADC1 CH1 | ADC | Disponible en `adc_module.c` |
+| Ventilador | 19 | LEDC CH0 / TIMER_0 | PWM 25 kHz, 10 bits |
+| Servo cortina | 18 | LEDC CH4 / TIMER_2 | PWM 50 Hz, pulso 1–2 ms |
+| LED RGB rojo | 21 | LEDC CH1 / TIMER_1 | PWM 1 kHz |
+| LED RGB verde | 22 | LEDC CH2 / TIMER_1 | PWM 1 kHz |
+| LED RGB azul | 23 | LEDC CH3 / TIMER_1 | PWM 1 kHz |
+| LED alarma rojo | 2 | GPIO | Parpadea si T > máxima |
 
-* Set the Wi-Fi SoftAP configuration.
-    * Set `WiFi AP SSID`.
-    * Set `WiFi AP Password`.
+> Revisa que estos GPIO existan y estén libres en tu placa ESP32-C6 concreta.
 
-* Set the Wi-Fi STA configuration.
-    * Set `WiFi Remote AP SSID`.
-    * Set `WiFi Remote AP Password`.
+## Diagrama de conexión básico
 
-Optional: If necessary, modify the other choices to suit your needs.
+```text
+3.3V ── R fija 10k ──┬── GPIO ADC1_CH0
+                     │
+                    NTC 10k
+                     │
+                    GND
 
-### Build and Flash
-
-Build the project and flash it to the board, then run the monitor tool to view the serial output:
-
-Run `idf.py -p PORT flash monitor` to build, flash and monitor the project.
-
-(To exit the serial monitor, type ``Ctrl-]``.)
-
-## Example Output
-
-There is the console output for this example:
-
-```
-I (680) WiFi SoftAP: ESP_WIFI_MODE_AP
-I (690) WiFi SoftAP: wifi_init_softap finished. SSID:myssid password:mypassword channel:1
-I (690) WiFi Sta: ESP_WIFI_MODE_STA
-I (690) WiFi Sta: wifi_init_sta finished.
-I (700) phy_init: phy_version 4670,719f9f6,Feb 18 2021,17:07:07
-I (800) wifi:mode : sta (58:bf:25:e0:41:00) + softAP (58:bf:25:e0:41:01)
-I (800) wifi:enable tsf
-I (810) wifi:Total power save buffer number: 16
-I (810) wifi:Init max length of beacon: 752/752
-I (810) wifi:Init max length of beacon: 752/752
-I (820) WiFi Sta: Station started
-I (820) wifi:new:<1,1>, old:<1,1>, ap:<1,1>, sta:<1,1>, prof:1
-I (820) wifi:state: init -> auth (b0)
-I (830) wifi:state: auth -> assoc (0)
-E (840) wifi:Association refused temporarily, comeback time 1536 mSec
-I (2380) wifi:state: assoc -> assoc (0)
-I (2390) wifi:state: assoc -> run (10)
-I (2400) wifi:connected with myssid_c3, aid = 1, channel 1, 40U, bssid = 84:f7:03:60:86:1d
-I (2400) wifi:security: WPA2-PSK, phy: bgn, rssi: -14
-I (2410) wifi:pm start, type: 1
-
-I (2410) wifi:AP's beacon interval = 102400 us, DTIM period = 2
-I (3920) WiFi Sta: Got IP:192.168.5.2
-I (3920) esp_netif_handlers: sta ip: 192.168.5.2, mask: 255.255.255.0, gw: 192.168.5.1
-I (3920) WiFi Sta: connected to ap SSID:myssid_c3 password:mypassword_c3
+GPIO19 ── Driver/MOSFET ── Ventilador ── Fuente externa
+GPIO18 ── Señal servo; servo con 5V externo y GND común
+GPIO21 ── Resistencia ── RGB Rojo
+GPIO22 ── Resistencia ── RGB Verde
+GPIO23 ── Resistencia ── RGB Azul
+GPIO2  ── Resistencia ── LED alarma rojo
 ```
 
-## Running the example on ESP Chips without Wi-Fi
+Para el ventilador y el servo, usa fuente externa si el consumo supera lo que entrega la placa. Une siempre el GND de la fuente externa con el GND del ESP32-C6.
 
-This example can run on ESP Chips without Wi-Fi using ESP-Hosted. See the [Two-Chip Solution](../README.md#wi-fi-examples-with-two-chip-solution) section in the upper level `README.md` for information.
+## Dashboard web
 
-## Troubleshooting
+Conéctate al Soft-AP del ESP32 y abre:
 
-For any technical queries, please open an [issue](https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you soon.
+```text
+http://192.168.0.1/
+```
+
+Desde el panel puedes:
+
+- Ver temperatura real, ADC raw, mV, ventilador y alarma.
+- Cambiar modo térmico automático/manual.
+- Ajustar temperatura deseada y máxima.
+- Forzar ventilador manual.
+- Cambiar modo de cortina manual/automático por agenda.
+- Ajustar apertura del servo.
+- Controlar RGB e intensidad.
+- Crear, borrar y consultar 10 registros de agenda.
+- Guardar credenciales Wi-Fi STA.
+- Cambiar credenciales del Soft-AP.
+- Subir firmware OTA `.bin`.
+
+## Endpoints principales
+
+| Endpoint | Método | Uso |
+|---|---|---|
+| `/api/state` | GET | Estado completo del sistema |
+| `/api/control` | POST | Actualiza térmico, cortina y RGB |
+| `/dhtSensor.json` | GET | Compatibilidad; devuelve NTC real |
+| `/read_regs.json` | GET | Lee agenda |
+| `/readreg.json` | POST | Lee agenda, compatibilidad |
+| `/regchange.json` | POST | Guarda registro de agenda |
+| `/regerase.json` | POST | Borra registro |
+| `/wifiConnect.json` | POST | Configura Wi-Fi STA |
+| `/api/ap_config` | POST | Configura Soft-AP dinámico |
+| `/OTAupdate` | POST | Sube firmware OTA |
+| `/OTAstatus` | POST | Estado OTA |
+
+## Compilación y carga
+
+Desde la raíz del proyecto:
+
+```bash
+idf.py set-target esp32c6
+idf.py menuconfig
+idf.py build
+idf.py -p <PUERTO> flash monitor
+```
+
+Ejemplo:
+
+```bash
+idf.py -p COM5 flash monitor
+```
+
+## Archivos importantes
+
+| Archivo | Descripción |
+|---|---|
+| `main/main.c` | Inicializa NVS, control local y Wi-Fi |
+| `main/control_system.c` | Estado thread-safe, control fan/servo/RGB, agenda |
+| `main/http_server.c` | Servidor HTTP, JSON, OTA |
+| `main/register.c` | Agenda persistente en NVS |
+| `main/adc_module.c` | ADC calibrado Curve Fitting |
+| `main/ntc_module.c` | Conversión NTC a °C |
+| `main/wifi_app.c` | AP+STA y SNTP |
+| `main/index.html`, `app.js`, `app.css` | Dashboard |
+| `ANALISIS_MODIFICACIONES.md` | Justificación técnica de cada cambio |
+
+## Nota de validación
+
+Este paquete fue ajustado por revisión estática. Debes hacer la validación final con `idf.py build` en tu entorno ESP-IDF porque aquí no está disponible el toolchain ESP32-C6.

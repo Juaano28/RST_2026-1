@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/CMakeFiles/bootloader
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/CMakeFiles/bootloader.rule
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/CMakeFiles/bootloader-complete.rule
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+C:/Users/jelop/OneDrive/Documentos/U/2026-1/Sistemas _en _tiempo _real/RST_2026-1/ProyectoFinal/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
